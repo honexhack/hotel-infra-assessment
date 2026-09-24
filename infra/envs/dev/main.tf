@@ -27,3 +27,17 @@ module "network" {
   vpc_cidr = var.vpc_cidr
   azs      = var.azs
 }
+
+module "ecs" {
+  source = "../../modules/ecs"
+
+  name               = local.name
+  aws_region         = var.aws_region
+  vpc_id             = module.network.vpc_id
+  public_subnet_ids  = module.network.public_subnet_ids
+  private_subnet_ids = module.network.private_subnet_ids
+  container_image    = var.container_image
+  cpu                = var.app_cpu
+  memory             = var.app_memory
+  desired_count      = var.app_desired_count
+}

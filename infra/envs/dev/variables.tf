@@ -20,3 +20,20 @@ variable "vpc_cidr" {
 variable "azs" {
   type = list(string)
 }
+
+variable "container_image" {
+  type    = string
+  default = "nginx:1.27-alpine"
+}
+
+variable "app_cpu" {
+  type = number
+}
+
+variable "app_memory" {
+  type = number
+}
+
+variable "app_desired_count" {
+  type = number
+}
