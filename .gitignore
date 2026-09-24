@@ -1,0 +1,14 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Secrets
+.env
+
+# Database backups
+backups/
+
+# Mac
+.DS_Store
