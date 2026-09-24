@@ -159,3 +159,60 @@ sleep 5   # wait for init scripts to finish
 ./scripts/backup.sh
 ./scripts/restore.sh
 ```
+## Terraform
+
+Internet -> ALB -> ECS Fargate (nginx) -> RDS Postgres, in ap-south-1.
+
+ALB and NAT are in public subnets. ECS tasks and RDS are in private subnets.
+
+Security groups:
+- alb sg: port 80 from anywhere
+- app sg: port 80 only from alb sg
+- db sg: port 5432 only from app sg
+
+RDS has `publicly_accessible = false` and the master password is managed
+by RDS in Secrets Manager, so there is no password in the code.
+
+### dev vs prod
+
+| | dev | prod |
+|---|---|---|
+| vpc | 10.10.0.0/16 | 10.20.0.0/16 |
+| ecs task | 256 cpu / 512 mb, 1 task | 512 cpu / 1024 mb, 2 tasks |
+| rds | db.t4g.micro, 20gb | db.t4g.medium, 50gb |
+| multi az | no | yes |
+| backup retention | 1 day | 14 days |
+| deletion protection | false | true |
+| final snapshot | skipped | taken |
+
+Values are in each env's `terraform.tfvars`.
+
+### Running plan
+
+```bash
+cd infra/envs/dev    # or prod
+terraform fmt -check -recursive ../../
+terraform init
+terraform validate
+terraform plan -refresh=false
+```
+
+No AWS account needed. `plan_only` is `true` by default, which makes the
+provider use mock credentials and skip the account checks. For a real
+deploy set `plan_only = false` and use normal AWS credentials.
+
+State is local for now. Each env's `backend.tf` has the S3 backend config
+commented out (separate state key per env).
+
+### CI
+
+`.github/workflows/terraform.yml` runs on pull requests that touch `infra/`.
+It runs fmt, init, validate and plan for dev and prod, and posts the plan
+as a PR comment. Example: PR #1.
+
+### Things I'd add for a real setup
+
+- one NAT gateway per AZ (right now there is one to keep cost down)
+- HTTPS listener with an ACM certificate
+- S3 backend for state
+- autoscaling for the ECS service
